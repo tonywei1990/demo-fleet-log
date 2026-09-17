@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo Fleet Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f2ee; --surface: #ffffff; --ink: #1a1d1f; --ink-muted: #6b7178;
+    --line: #dcd8d0; --accent: #3d6b82; --accent-ink: #ffffff;
+    --warn: #b5651d; --warn-bg: #fbe9d8; --ok-bg: #e7efe9; --ok-ink: #3f6b4d;
+    --danger: #a13d3d; --radius: 3px; --shadow: 0 1px 2px rgba(20,20,20,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171a; --surface: #1c2024; --ink: #e9e6e0; --ink-muted: #92979d;
+      --line: #33383e; --accent: #6ea3bd; --accent-ink: #0f1215;
+      --warn: #d99456; --warn-bg: #2e2318; --ok-bg: #1c2820; --ok-ink: #7fae8d;
+      --danger: #cc7676; --shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171a; --surface: #1c2024; --ink: #e9e6e0; --ink-muted: #92979d;
+    --line: #33383e; --accent: #6ea3bd; --accent-ink: #0f1215;
+    --warn: #d99456; --warn-bg: #2e2318; --ok-bg: #1c2820; --ok-ink: #7fae8d;
+    --danger: #cc7676; --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:760px; margin:0 auto; padding:32px 20px 80px; }
+  header.page { border-bottom:2px solid var(--ink); padding-bottom:18px; margin-bottom:28px; display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; }
+  header.page h1 { font-size:1.5rem; font-weight:700; margin:0; letter-spacing:-0.01em; }
+  header.page p { margin:4px 0 0; color:var(--ink-muted); font-size:0.9rem; }
+  .fleet-count { font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--ink-muted); white-space:nowrap; }
+  .fleet-count b { color:var(--ink); font-weight:700; }
+  section.add-panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:var(--shadow); }
+  section.add-panel h2 { font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-muted); margin:0 0 14px; font-weight:600; }
+  .field-row.four { display:grid; grid-template-columns:1.2fr 1.2fr 0.8fr 0.9fr; gap:12px; margin-bottom:12px; }
+  @media (max-width:560px) { .field-row.four { grid-template-columns:1fr 1fr; } }
+  label { display:block; font-size:0.75rem; color:var(--ink-muted); margin-bottom:5px; }
+  input { width:100%; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius); padding:9px 10px; font-family:inherit; font-size:0.92rem; color:var(--ink); }
+  input[type="number"] { font-family:'JetBrains Mono',monospace; }
+  input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  button { font-family:inherit; cursor:pointer; border:none; border-radius:var(--radius); font-size:0.88rem; }
+  .btn-primary { background:var(--accent); color:var(--accent-ink); font-weight:600; padding:10px 16px; }
+  .btn-primary:hover { filter:brightness(1.08); }
+  .btn-primary:disabled { opacity:0.5; cursor:default; }
+  .btn-ghost { background:transparent; color:var(--ink-muted); border:1px solid var(--line); padding:9px 12px; }
+  .btn-ghost:hover { color:var(--ink); border-color:var(--ink-muted); }
+  .btn-text { background:none; color:var(--accent); padding:4px 0; font-weight:600; font-size:0.85rem; }
+  .btn-danger-text { background:none; color:var(--danger); padding:4px 0; font-size:0.8rem; }
+  .form-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+  .list h2 { font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-muted); margin:0 0 12px; font-weight:600; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; margin-bottom:10px; box-shadow:var(--shadow); }
+  .card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+  .card-id .staff { font-weight:600; font-size:1rem; }
+  .card-id .vehicle { color:var(--ink-muted); font-size:0.86rem; margin-top:2px; }
+  .card-id .vehicle .rego { font-family:'JetBrains Mono',monospace; letter-spacing:0.02em; }
+  .mileage-block { text-align:right; }
+  .mileage-num { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1.3rem; font-variant-numeric:tabular-nums; }
+  .mileage-unit { font-size:0.72rem; color:var(--ink-muted); margin-left:3px; }
+  .status-row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); flex-wrap:wrap; gap:10px; }
+  .badge { font-size:0.75rem; padding:3px 9px; border-radius:999px; font-weight:500; }
+  .badge.ok { background:var(--ok-bg); color:var(--ok-ink); }
+  .badge.warn { background:var(--warn-bg); color:var(--warn); }
+  .card-actions { display:flex; gap:14px; align-items:center; }
+  .update-row { display:flex; gap:8px; align-items:center; margin-top:12px; }
+  .update-row input { max-width:160px; }
+  .empty { border:1px dashed var(--line); border-radius:var(--radius); padding:30px 20px; text-align:center; color:var(--ink-muted); font-size:0.9rem; }
+  .hint { font-size:0.78rem; color:var(--ink-muted); margin-top:14px; }
+  .notice { font-size:0.8rem; padding:8px 12px; border-radius:var(--radius); margin-bottom:20px; display:none; }
+  .notice.error { color:var(--warn); background:var(--warn-bg); }
+  .notice.setup { color:var(--ink-muted); background:var(--surface); border:1px solid var(--line); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div>
+      <h1>Demo Fleet Log</h1>
+      <p>Who's in which demo vehicle, and this week's mileage</p>
+    </div>
+    <div class="fleet-count" id="fleetCount">— vehicles out</div>
+  </header>
+
+  <div class="notice setup" id="setupNotice">
+    This page isn't connected to a data source yet — open the HTML file and set <code>SHEET_API_URL</code> near the bottom of the script to your Apps Script Web App URL.
+  </div>
+  <div class="notice error" id="errorNotice">Couldn't reach the data source — check your connection and try again.</div>
+
+  <section class="add-panel">
+    <h2>Log a vehicle</h2>
+    <form id="addForm">
+      <div class="field-row four">
+        <div>
+          <label for="f-staff">Staff member</label>
+          <input id="f-staff" type="text" placeholder="e.g. Priya Nair" required>
+        </div>
+        <div>
+          <label for="f-vehicle">Vehicle</label>
+          <input id="f-vehicle" type="text" placeholder="e.g. Denza B5 Leopard" required>
+        </div>
+        <div>
+          <label for="f-rego">Rego</label>
+          <input id="f-rego" type="text" placeholder="e.g. S123ABC" required>
+        </div>
+        <div>
+          <label for="f-mileage">Mileage (km)</label>
+          <input id="f-mileage" type="number" min="0" step="1" placeholder="0" required>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" id="addBtn">Add to log</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="list">
+    <h2>Current vehicles</h2>
+    <div id="cards"></div>
+    <div class="empty" id="emptyState" style="display:none;">
+      No demo vehicles logged yet. Add one above to start tracking.
+    </div>
+    <p class="hint">Mileage last updated 7+ days ago is flagged for a weekly check. This page refreshes automatically every 15 seconds.</p>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  // ---- SET THIS to your Apps Script Web App URL after deploying it ----
+  const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwi0LYMWCwrgURr2oYP0fF3BKzm71I1duJRtJnSGCh7RKtVJMLQq3vcWaoVxyBjiCWA2w/exec";
+  // -----------------------------------------------------------------------
+
+  const cardsEl = document.getElementById('cards');
+  const emptyEl = document.getElementById('emptyState');
+  const countEl = document.getElementById('fleetCount');
+  const setupNotice = document.getElementById('setupNotice');
+  const errorNotice = document.getElementById('errorNotice');
+  const addForm = document.getElementById('addForm');
+  const addBtn = document.getElementById('addBtn');
+
+  let rows = [];
+  let refreshTimer = null;
+
+  function configured() {
+    return SHEET_API_URL && SHEET_API_URL.indexOf('http') === 0;
+  }
+
+  function daysSince(iso) {
+    if (!iso) return null;
+    const then = new Date(iso).getTime();
+    if (isNaN(then)) return null;
+    return Math.floor((Date.now() - then) / (1000 * 60 * 60 * 24));
+  }
+
+  function relativeUpdated(iso) {
+    const d = daysSince(iso);
+    if (d === null) return 'no record';
+    if (d <= 0) return 'today';
+    if (d === 1) return '1 day ago';
+    return d + ' days ago';
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function render() {
+    countEl.textContent = rows.length + (rows.length === 1 ? ' vehicle out' : ' vehicles out');
+
+    if (rows.length === 0) {
+      cardsEl.innerHTML = '';
+      emptyEl.style.display = 'block';
+      return;
+    }
+    emptyEl.style.display = 'none';
+
+    const sorted = rows.slice().sort((a, b) => {
+      const sa = (a.staff || '').toLowerCase();
+      const sb = (b.staff || '').toLowerCase();
+      return sa < sb ? -1 : sa > sb ? 1 : 0;
+    });
+
+    cardsEl.innerHTML = sorted.map(a => {
+      const d = daysSince(a.updatedAt);
+      const overdue = d === null || d >= 7;
+      const mileageNum = Number(a.mileage);
+      const mileage = !isNaN(mileageNum) ? mileageNum.toLocaleString('en-AU') : '—';
+      return `
+        <div class="card" data-id="${a.id}">
+          <div class="card-top">
+            <div class="card-id">
+              <div class="staff">${escapeHtml(a.staff || 'Unassigned')}</div>
+              <div class="vehicle">${escapeHtml(a.vehicle || 'Vehicle')} &middot; <span class="rego">${escapeHtml(a.rego || '—')}</span></div>
+            </div>
+            <div class="mileage-block">
+              <span class="mileage-num">${mileage}</span><span class="mileage-unit">km</span>
+            </div>
+          </div>
+          <div class="status-row">
+            <span class="badge ${overdue ? 'warn' : 'ok'}">${overdue ? 'Mileage check due' : 'Updated ' + relativeUpdated(a.updatedAt)}</span>
+            <div class="card-actions">
+              <button type="button" class="btn-text" data-action="toggle-update" data-id="${a.id}">Update mileage</button>
+              <button type="button" class="btn-danger-text" data-action="remove" data-id="${a.id}">Vehicle returned</button>
+            </div>
+          </div>
+          <div class="update-row" id="update-${a.id}" style="display:none;">
+            <input type="number" min="${mileageNum || 0}" step="1" id="input-${a.id}" placeholder="New mileage">
+            <button type="button" class="btn-primary" data-action="save-update" data-id="${a.id}">Save</button>
+            <button type="button" class="btn-ghost" data-action="cancel-update" data-id="${a.id}">Cancel</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function apiGet() {
+    const res = await fetch(SHEET_API_URL, { method: 'GET' });
+    if (!res.ok) throw new Error('bad response');
+    return res.json();
+  }
+
+  async function apiPost(payload) {
+    const res = await fetch(SHEET_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('bad response');
+    return res.json();
+  }
+
+  async function refresh() {
+    if (!configured()) return;
+    try {
+      const data = await apiGet();
+      rows = Array.isArray(data) ? data : [];
+      errorNotice.style.display = 'none';
+      render();
+    } catch (e) {
+      errorNotice.style.display = 'block';
+    }
+  }
+
+  cardsEl.addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+
+    if (action === 'toggle-update') {
+      const row = document.getElementById('update-' + id);
+      row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+      const input = document.getElementById('input-' + id);
+      if (row.style.display === 'flex') input.focus();
+    } else if (action === 'cancel-update') {
+      document.getElementById('update-' + id).style.display = 'none';
+    } else if (action === 'save-update') {
+      const input = document.getElementById('input-' + id);
+      const val = parseInt(input.value, 10);
+      if (isNaN(val)) { input.focus(); return; }
+      btn.disabled = true;
+      apiPost({ action: 'update', id: id, mileage: val })
+        .then(refresh)
+        .catch(function () { errorNotice.style.display = 'block'; })
+        .finally(function () { btn.disabled = false; });
+    } else if (action === 'remove') {
+      if (!confirm('Mark this vehicle as returned and remove it from the log?')) return;
+      apiPost({ action: 'delete', id: id })
+        .then(refresh)
+        .catch(function () { errorNotice.style.display = 'block'; });
+    }
+  });
+
+  addForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!configured()) return;
+    const staff = document.getElementById('f-staff').value.trim();
+    const vehicle = document.getElementById('f-vehicle').value.trim();
+    const rego = document.getElementById('f-rego').value.trim();
+    const mileage = parseInt(document.getElementById('f-mileage').value, 10);
+    if (!staff || !vehicle || !rego || isNaN(mileage)) return;
+
+    addBtn.disabled = true;
+    apiPost({ action: 'add', staff: staff, vehicle: vehicle, rego: rego, mileage: mileage })
+      .then(function () {
+        addForm.reset();
+        return refresh();
+      })
+      .catch(function () { errorNotice.style.display = 'block'; })
+      .finally(function () { addBtn.disabled = false; });
+  });
+
+  function init() {
+    if (!configured()) {
+      setupNotice.style.display = 'block';
+      render();
+      return;
+    }
+    refresh();
+    refreshTimer = setInterval(refresh, 15000);
+  }
+
+  render();
+  init();
+})();
+</script>
+</body>
+</html>
